@@ -1,0 +1,44 @@
+---
+version: '3.3'
+
+services:
+  wordpress-db:
+    image: mariadb:10.7
+    container_name: wordpress-db
+    restart: unless-stopped
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./database:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=wordpress
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_INITDB_SKIP_TZINFO=1  # Behebt die bekannten Startprobleme
+
+  wordpress-app:
+    image: wordpress:6.1.1-php8.2-apache
+    container_name: wordpress-app
+    restart: unless-stopped
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./config/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
+      - ./data:/var/www/html/
+      - .logs/:/var/log/apache2/
+    environment:
+      - WORDPRESS_DB_HOST=wordpress-db:3306
+      - WORDPRESS_DB_USER=${MYSQL_USER}
+      - WORDPRESS_DB_PASSWORD=${MYSQL_PASSWORD}
+      - WORDPRESS_DB_NAME=wordpress
+    networks:
+      - default
+      - proxy
+
+networks:
+  proxy:
+    external:
+      name: proxy
+  default:
+    driver: bridge
